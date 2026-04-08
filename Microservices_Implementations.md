@@ -2,7 +2,7 @@ Project Overview
 
 Service name: transaction-analytics-service
 Type: Event‑driven, read‑only analytics microservice
-Stack: Java 17, Spring Boot, Spring Data JPA, RabbitMQ
+Stack: Java 17, Spring Boot, Spring Data JPA, RabbitMQ.
 
 📁 Directory Structure (As Requested)
 transaction-analytics-service
