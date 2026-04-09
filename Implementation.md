@@ -6,13 +6,6 @@
 
 ---
 
-## Repository Navigation
-- [Code](https://github.com/TechCursed/Transaction-Analytics)
-- [Issues](https://github.com/TechCursed/Transaction-Analytics/issues)
-- [Pull Requests](https://github.com/TechCursed/Transaction-Analytics/pulls)
-
----
-
 ## Directory Structure
 ```
 transaction-analytics-service
