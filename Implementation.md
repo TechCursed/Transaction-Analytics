@@ -1,4 +1,3 @@
-# Transaction Analytics Service
 
 ## Project Overview
 - **Service Name:** transaction-analytics-service  
