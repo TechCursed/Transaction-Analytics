@@ -653,153 +653,109 @@ Batch inserts absorb high write bursts efficiently, while indexes keep read quer
 ✅ Ideal Answer:
 Query latency, index hit ratio, write throughput, lock contention, slow query logs, and table growth trends.
 
-Q20 (Advanced)
-
-Interviewer: How would this approach differ if writes were transactional instead of analytics‑only?
+### Q130 : How would this approach differ if writes were transactional instead of analytics‑only?
 
 ✅ Ideal Answer:
 Transactional systems would require stricter consistency guarantees and potentially fewer indexes to minimize write latency. Analytics systems favor read optimization and tolerate eventual consistency.
 
-Q1 (Basic)
-
-Interviewer: What kind of failures are you referring to here?
+### Q131 : What kind of failures are you referring to here?
 
 ✅ Ideal Answer:
 Failures like message processing errors, temporary database outages, malformed events, schema mismatches, or unexpected runtime exceptions in the analytics service.
 
-Q2 (Basic)
-
-Interviewer: Why is failure handling important in an analytics service?
+### Q132 : Why is failure handling important in an analytics service?
 
 ✅ Ideal Answer:
 Because analytics systems handle high volumes of asynchronous data, and failures are inevitable. Proper handling ensures system stability, data correctness, and prevents failures from cascading to upstream systems.
 
-Q3 (Basic)
-
-Interviewer: What do you mean by retry mechanisms?
+### Q133 : What do you mean by retry mechanisms?
 
 ✅ Ideal Answer:
 Retry mechanisms automatically reattempt message processing when transient failures occur, such as temporary network or database issues, instead of immediately discarding the event.
 
-Q4 (Basic)
-
-Interviewer: What is a Dead Letter Queue (DLQ)?
+###  Q134 : What is a Dead Letter Queue (DLQ)?
 
 ✅ Ideal Answer:
 A DLQ is a separate queue where messages are sent after repeated processing failures, allowing them to be isolated, inspected, and handled without blocking the main processing flow.
 
-Q5 (Basic)
-
-Interviewer: Why do you need a DLQ at all?
+### Q135 : Why do you need a DLQ at all?
 
 ✅ Ideal Answer:
 Because some failures are permanent, like invalid schemas or corrupt data. Retrying such messages endlessly would block the pipeline, so DLQs allow safe isolation and manual intervention.
 
-✅ MEDIUM LEVEL (Design & Implementation)
-
-Q6 (Medium)
-
-Interviewer: How do retries work in your system?
+###Q136 : How do retries work in your system?
 
 ✅ Ideal Answer:
 When a message processing attempt fails, it is retried automatically with a limited retry count, usually using broker‑level retry or consumer‑level retry logic. Only after retries are exhausted is the message sent to the DLQ.
 
-Q7 (Medium)
-
-Interviewer: What kind of failures should be retried?
+### Q137 : What kind of failures should be retried?
 
 ✅ Ideal Answer:
 Transient failures like database timeouts, temporary network issues, or short‑lived service unavailability should be retried, as they often resolve on their own.
 
-Q8 (Medium)
-
-Interviewer: What failures should not be retried?
+### Q138 : What failures should not be retried?
 
 ✅ Ideal Answer:
 Permanent failures such as invalid payloads, schema violations, missing mandatory fields, or logically incorrect data should not be retried and should go directly to the DLQ.
 
-Q9 (Medium)
-
-Interviewer: How many retries are usually safe?
+### Q139 : How many retries are usually safe?
 
 ✅ Ideal Answer:
 Retries should be limited—often 3 to 5 attempts—to avoid infinite retry loops. The exact number depends on system latency, throughput requirements, and failure patterns.
 
-Q10 (Medium)
-
-Interviewer: How do retries interact with idempotency?
+### Q140 : How do retries interact with idempotency?
 
 ✅ Ideal Answer:
 Retries can cause duplicate deliveries, so idempotent processing ensures retries don’t result in duplicate data or incorrect aggregates.
 
 ✅ ADVANCED LEVEL (Reliability, Isolation & Production Thinking)
 
-Q11 (Advanced)
-
-Interviewer: How did you guarantee analytics failures never impacted transaction processing?
+### Q141 : How did you guarantee analytics failures never impacted transaction processing?
 
 ✅ Ideal Answer:
 By designing the analytics service to be fully asynchronous and decoupled from transaction systems. Transactions emit events but never wait for analytics to succeed, so failures in analytics cannot affect transaction execution.
 
-Q12 (Advanced)
-
-Interviewer: What happens if the analytics service is completely down?
+### Q142 : What happens if the analytics service is completely down?
 
 ✅ Ideal Answer:
 Transaction systems continue operating normally. Events remain buffered in the message broker and are processed once the analytics service comes back online.
 
-Q13 (Advanced)
-
-Interviewer: How do you avoid message loss during failures?
+### Q143 : How do you avoid message loss during failures?
 
 ✅ Ideal Answer:
 Messages are acknowledged only after successful processing and database commits. Failed attempts are retried, and persistent failures are stored in a DLQ rather than dropped.
 
-Q14 (Advanced)
-
-Interviewer: What metadata is useful in DLQ messages?
+### Q144 : What metadata is useful in DLQ messages?
 
 ✅ Ideal Answer:
 Original payload, error reason, stack trace, retry count, timestamp, and correlation IDs to trace the message back to its source.
 
-Q15 (Advanced)
-
-Interviewer: How do you handle DLQ messages operationally?
+### Q145 : How do you handle DLQ messages operationally?
 
 ✅ Ideal Answer:
 DLQ messages are monitored via alerts. Engineers inspect them to identify root causes, fix bugs or schema issues, and replay messages when appropriate.
 
-Q16 (Advanced)
-
-Interviewer: How is replay done safely without corrupting data?
+### Q146 : How is replay done safely without corrupting data?
 
 ✅ Ideal Answer:
 Because consumers are idempotent and raw data is append‑only, replaying messages does not create duplicates or inconsistencies.
 
-Q17 (Advanced)
-
-Interviewer: What is the risk of aggressive retries?
+### Q147 : What is the risk of aggressive retries?
 
 ✅ Ideal Answer:
 Aggressive retries can overwhelm downstream systems, increase load during outages, and cause retry storms. Controlled retries with backoff are safer.
 
-Q18 (Advanced)
-
-Interviewer: Did you use exponential backoff? Why?
+### Q148 : Did you use exponential backoff? Why?
 
 ✅ Ideal Answer:
 Yes, exponential backoff reduces pressure on failing dependencies by gradually increasing retry intervals, improving overall system stability.
 
-Q19 (Advanced)
-
-Interviewer: How do you monitor failure handling effectiveness?
+### Q149 : How do you monitor failure handling effectiveness?
 
 ✅ Ideal Answer:
 By tracking retry counts, DLQ size, processing latency, consumer error rates, and alerting when thresholds are breached.
 
-Q20 (Advanced)
-
-Interviewer: Why is this pattern particularly critical in fintech systems?
+### Q150 : Why is this pattern particularly critical in fintech systems?
 
 ✅ Ideal Answer:
 Because fintech systems require high availability and strict isolation. Analytics errors must never delay or block money movement, and robust failure handling ensures regulatory safety and operational resilience.
