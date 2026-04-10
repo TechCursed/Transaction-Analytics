@@ -149,164 +149,133 @@ There is no synchronous dependency. The transaction flow ends once an event is p
 
 Q30. What would break if this decoupling didn’t exist?
 
-
 ✅ Answer:
 Failures or slowness in analytics could block transactions, cause cascading outages, increase latency, and violate financial SLAs—making the system unsafe for fintech workloads.
 
 
-Q1 : What do you mean by an idempotent consumer?
+Q31 : What do you mean by an idempotent consumer?
 
 ✅ Ideal Answer:
 An idempotent consumer ensures that processing the same event multiple times produces the same outcome as processing it once. Even if duplicate messages are delivered, the system state remains correct and consistent.
 
-Q2 : Why do you need idempotency in message‑driven systems?
+Q32 : Why do you need idempotency in message‑driven systems?
 
 ✅ Ideal Answer:
 Because message brokers can deliver duplicate events due to retries, network failures, or consumer crashes. Without idempotency, duplicates can corrupt data, especially in financial systems.
 
-Q3 : What is meant by duplicate‑event handling?
+Q33 : What is meant by duplicate‑event handling?
 
 ✅ Ideal Answer:
 Duplicate‑event handling refers to detecting and safely ignoring already processed events, ensuring they don’t cause double inserts or double aggregation in downstream systems.
 
-Q4 : What kind of problems can duplicates cause in analytics systems?
+Q34 : What kind of problems can duplicates cause in analytics systems?
 
 ✅ Ideal Answer:
 Duplicates can inflate transaction counts, overstate financial volume, skew success/failure ratios, and cause incorrect business or compliance reports.
 
-Q5 : What does schema validation mean here?
+Q35 : What does schema validation mean here?
 
 ✅ Ideal Answer:
 Schema validation ensures incoming events adhere to a predefined structure and data contract, such as expected fields, data types, and allowed values, before processing them.
 
 
-Q6 : How did you implement idempotency in your consumer?
+Q36 : How did you implement idempotency in your consumer?
 
 ✅ Ideal Answer:
 Using a unique business key—typically a combination of transaction ID and event type—enforced through a database unique constraint. If a duplicate event is processed, the insert fails gracefully and the event is ignored.
 
-Q7 : Why is database‑level idempotency preferred over in‑memory checks?
+Q37 : Why is database‑level idempotency preferred over in‑memory checks?
 
 ✅ Ideal Answer:
 Database‑level idempotency is durable and works across restarts and multiple consumer instances. In‑memory checks fail in distributed systems or when consumers restart.
 
-Q8 : What schema validation strategies did you use?
+Q38 : What schema validation strategies did you use?
 
 ✅ Ideal Answer:
 We validated required fields, data types, and enum values at the consumer boundary—often using JSON schema or DTO validation—before business processing or database writes.
 
-Q9 : What happens if an event fails schema validation?
+Q39 : What happens if an event fails schema validation?
 
 ✅ Ideal Answer:
 Invalid events are rejected and sent to a Dead Letter Queue for inspection, preventing corrupt or malformed data from entering the analytics pipeline.
 
-Q10 : How do retries interact with idempotency?
+Q40 : How do retries interact with idempotency?
 
 ✅ Ideal Answer:
 Retries may resend the same event multiple times, but because the consumer is idempotent, retries do not cause duplicate state changes, making retries safe.
 
 
-Q11 : You mentioned exactly‑once processing semantics. How did you achieve that?
+Q41 : You mentioned exactly‑once processing semantics. How did you achieve that?
 
 ✅ Ideal Answer:
 True exactly‑once isn’t guaranteed by most brokers, so we achieved effectively‑once semantics by combining at‑least‑once delivery with idempotent consumers and transactional database writes.
 
-Q12 (Advanced)
-
-Interviewer: Why is exactly‑once hard to achieve in distributed systems?
+Q42 : Why is exactly‑once hard to achieve in distributed systems?
 
 ✅ Ideal Answer:
 Because partial failures, network partitions, and crashes can occur after message delivery but before acknowledgment. Coordinating state changes across distributed components without duplication is inherently complex.
 
-Q13 (Advanced)
-
-Interviewer: How does your design support safe event replays?
+Q43 : How does your design support safe event replays?
 
 ✅ Ideal Answer:
 Since consumers are idempotent and raw data is append‑only, events can be replayed from the broker or event store without risking double counting or data corruption.
 
-Q14 (Advanced)
-
-Interviewer: What changes, if any, are required before replaying events?
+Q44 : What changes, if any, are required before replaying events?
 
 ✅ Ideal Answer:
 Typically, aggregated tables may be truncated or recomputed, but raw transaction tables remain unchanged, ensuring deterministic rebuilds.
 
-Q15 (Advanced)
-
-Interviewer: How do you handle high throughput while maintaining idempotency?
+Q45 : How do you handle high throughput while maintaining idempotency?
 
 ✅ Ideal Answer:
 By using efficient database constraints, indexed unique keys, batch processing, and tuned consumer concurrency so idempotency checks remain O(1) and don’t become a bottleneck.
 
-Q16 (Advanced)
-
-Interviewer: Can idempotency alone guarantee data correctness?
+Q46 : Can idempotency alone guarantee data correctness?
 
 ✅ Ideal Answer:
 No. Idempotency prevents duplicates, but correctness also depends on schema validation, correct event ordering assumptions, and consistent aggregation logic.
 
-Q17 (Advanced)
-
-Interviewer: How do you deal with out‑of‑order events?
+Q47 : How do you deal with out‑of‑order events?
 
 ✅ Ideal Answer:
 Analytics systems are designed to be eventually consistent. Aggregations rely on event timestamps, and since multiple lifecycle events are allowed per transaction, ordering isn’t strictly enforced at ingestion time.
 
-Q18 (Advanced)
-
-Interviewer: What are the risks if idempotency is implemented incorrectly?
+Q48 : What are the risks if idempotency is implemented incorrectly?
 
 ✅ Ideal Answer:
 Incorrect idempotency can silently corrupt metrics, cause financial misreporting, and break compliance requirements—often without immediate visibility.
 
-Q19 (Advanced)
-
-Interviewer: Why is this design especially important in fintech systems?
+Q49 : Why is this design especially important in fintech systems?
 
 ✅ Ideal Answer:
 Fintech systems require high data accuracy, auditability, and fault tolerance. Duplicate or inconsistent analytics can lead to wrong financial decisions or regulatory violations.
 
-Q20 (Advanced)
-
-Interviewer: How would this design differ if this were a transaction‑processing service instead of analytics?
+Q50 : How would this design differ if this were a transaction‑processing service instead of analytics?
 
 ✅ Ideal Answer:
 For transaction processing, stricter guarantees, distributed transactions, and stronger consistency controls would be required. For analytics, idempotent event consumption with eventual consistency is the safer and more scalable choice.
 
-1️⃣ What do you mean by “immutable transaction facts”?
-
-What they’re testing:
-Your understanding of immutability.
+Q51 : What do you mean by “immutable transaction facts”?
 
 ✅ Answer:
 Immutable transaction facts are records that, once written, are never updated or deleted. Each record represents a factual event that occurred at a specific time, ensuring the data always reflects what actually happened.
 
-2️⃣ Why is immutability important for transaction data?
-
-What they’re testing:
-Fintech and data integrity awareness.
+Q52 : Why is immutability important for transaction data?
 
 ✅ Answer:
 Immutability ensures data integrity, auditability, and trust. In financial systems, historical transaction data must not change, as it may be used for audits, dispute resolution, and compliance checks.
 
-3️⃣ What does “append‑only” mean in database terms?
-
-What they’re testing:
-Basic database modeling concepts.
+Q53 : What does “append‑only” mean in database terms?
 
 ✅ Answer:
 Append‑only means that data is only inserted into the table. Existing rows are never updated or deleted, making write operations predictable and avoiding accidental data loss or corruption.
 
-4️⃣ Why did you choose PostgreSQL for this storage?
-
-What they’re testing:
-Database selection rationale.
+Q54: Why did you choose PostgreSQL for this storage?
 
 ✅ Answer:
 PostgreSQL provides strong ACID guarantees, excellent indexing support, mature tooling, and reliability, making it well‑suited for storing critical financial data with consistency and durability.
 
-5️⃣ What kind of data is stored in this raw metrics table?
+Q55 : What kind of data is stored in this raw metrics table?
 
 What they’re testing:
 Understanding of domain data.
@@ -314,87 +283,52 @@ Understanding of domain data.
 ✅ Answer:
 It stores transaction identifiers, amounts, currencies, statuses, merchant information, region, and event timestamps—essentially the core transactional facts required for analytics and reporting.
 
-6️⃣ Why not update the record when transaction status changes?
-
-What they’re testing:
-Event‑driven mindset.
+Q56. Why not update the record when transaction status changes?
 
 ✅ Answer:
 Updating records would overwrite historical states. By storing each lifecycle event as a separate immutable record, we preserve the full transaction history and make downstream analytics more reliable.
 
-7️⃣ How does this help historical analysis?
-
-What they’re testing:
-Analytics reasoning.
+Q57. How does this help historical analysis?
 
 ✅ Answer:
 Because all events are retained permanently, we can analyze trends over time, recompute metrics for past periods, and answer questions that weren’t originally anticipated when the data was stored.
 
-🟡 MEDIUM LEVEL (8–14)
-
-Design decisions, integrity, and real‑world usage
-
-8️⃣ How does this design support auditability?
-
-What they’re testing:
-Fintech compliance thinking.
+Q58 : How does this design support auditability?
 
 ✅ Answer:
 Auditors can trace every transaction’s full lifecycle by reviewing immutable records. Since data isn’t modified, audits can trust the accuracy and completeness of historical records.
 
-9️⃣ How do you prevent duplicate transaction records?
-
-What they’re testing:
-Idempotency modeling.
+Q59 : How do you prevent duplicate transaction records?
 
 ✅ Answer:
 We use a unique constraint on key fields like transaction_id and event_type. If a duplicate event arrives, the insert fails safely without impacting the dataset.
 
-🔟 How does this design enable replayability?
-
-What they’re testing:
-Rebuild and recovery knowledge.
+Q60 : How does this design enable replayability?
 
 ✅ Answer:
 Since raw transaction events are stored permanently, we can reprocess them to recompute aggregates if business logic changes or analytics tables need rebuilding.
 
-1️⃣1️⃣ What performance benefits does append‑only storage provide?
-
-What they’re testing:
-Database performance insight.
+Q61 : What performance benefits does append‑only storage provide?
 
 ✅ Answer:
 Append‑only writes are fast because they avoid row locking and in‑place updates. This makes the system efficient under high write throughput.
 
-1️⃣2️⃣ How do you query large append‑only tables efficiently?
-
-What they’re testing:
-Indexing and optimization.
+Q62 :  How do you query large append‑only tables efficiently?
 
 ✅ Answer:
 We use time‑based indexes and merchant‑based indexes, allowing efficient filtering by date ranges and identifiers without scanning the entire table.
 
-1️⃣3️⃣ Why not store only aggregated data instead of raw facts?
-
-What they’re testing:
-Data architecture maturity.
+Q63 : Why not store only aggregated data instead of raw facts?
 
 ✅ Answer:
 Aggregates alone lose detail. Raw facts allow rebuilding aggregates, validating metrics, and answering new analytical questions without data loss.
 
-1️⃣4️⃣ How do you handle schema evolution over time?
-
-What they’re testing:
-Forward‑compatibility thinking.
+Q64 : How do you handle schema evolution over time?
 
 ✅ Answer:
 We version events and make schema changes backward‑compatible by adding nullable fields or new tables, ensuring old data remains valid and usable.
 
-🔴 ADVANCED LEVEL (15–20)
-
-Trade‑offs, scaling, and senior‑level reasoning
-
-1️⃣5️⃣ How does immutability simplify system design?
+Q65 : How does immutability simplify system design?
 
 What they’re testing:
 Architectural clarity.
@@ -402,42 +336,27 @@ Architectural clarity.
 ✅ Answer:
 Immutability reduces complexity by eliminating update conflicts, rollback scenarios, and race conditions. Systems become easier to reason about and debug.
 
-1️⃣6️⃣ How does this design behave under very high transaction volume?
-
-What they’re testing:
-Scalability strategy.
+Q66 : How does this design behave under very high transaction volume?
 
 ✅ Answer:
 Append‑only inserts scale well under load. Combined with partitioning and indexing, PostgreSQL can efficiently handle large write volumes without degrading performance.
 
-1️⃣7️⃣ Why not use NoSQL or event stores instead?
-
-What they’re testing:
-Technology trade‑offs.
+Q67 : Why not use NoSQL or event stores instead?
 
 ✅ Answer:
 PostgreSQL provides strong consistency, relational querying, and mature tooling. Given the need for structured queries and reporting, it was a practical and reliable choice.
 
-1️⃣8️⃣ How do you manage storage growth for immutable data?
-
-What they’re testing:
-Operational thinking.
+Q68 : How do you manage storage growth for immutable data?
 
 ✅ Answer:
 We use table partitioning by date and retention policies. Older partitions can be archived, compressed, or moved to cold storage without impacting recent queries.
 
-1️⃣9️⃣ How does this enable compliance and legal investigations?
-
-What they’re testing:
-Real fintech scenarios.
+Q69 : How does this enable compliance and legal investigations?
 
 ✅ Answer:
 Because every transaction event is preserved, investigators can reconstruct exact transaction timelines, verify outcomes, and prove data integrity during disputes or audits.
 
-2️⃣0️⃣ What problems would arise if the data were mutable instead?
-
-What they’re testing:
-Risk awareness.
+Q70 : What problems would arise if the data were mutable instead?
 
 ✅ Answer:
 Mutable data could hide historical states, introduce inconsistencies, complicate audits, and make it impossible to confidently replay or verify past transaction behavior.
