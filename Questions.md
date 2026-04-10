@@ -1,6 +1,6 @@
 ### MICROSERVICES Q&As
 
-Q1 : What do you mean by read‑only microservice in this context?
+####Q1 : What do you mean by read‑only microservice in this context?
 
 ✅ Ideal Answer:
 By read‑only, I mean the service does not modify or influence transaction data or money movement. It only consumes transaction events, stores immutable records for analytics, and exposes REST APIs to read aggregated insights for dashboards, reporting, and compliance. This ensures analytics logic never interferes with critical transaction processing.
