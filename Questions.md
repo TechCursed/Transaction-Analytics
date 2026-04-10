@@ -355,327 +355,197 @@ Because every transaction event is preserved, investigators can reconstruct exac
 ✅ Answer:
 Mutable data could hide historical states, introduce inconsistencies, complicate audits, and make it impossible to confidently replay or verify past transaction behavior.
 
-1️⃣ What do you mean by “incremental aggregation”?
-
-What they’re testing:
-Concept clarity.
+### Q71 : What do you mean by “incremental aggregation”?
 
 ✅ Answer:
 Incremental aggregation means updating aggregate metrics continuously as new events arrive, instead of recomputing totals by scanning the entire dataset each time.
 
-2️⃣ What are “pre‑aggregated daily financial summaries”?
-
-What they’re testing:
-Analytics basics.
+### Q72 : What are “pre‑aggregated daily financial summaries”?
 
 ✅ Answer:
 They are daily snapshots of key metrics like total transaction volume, total transactions, and success/failure counts, stored in advance to support fast queries.
 
-3️⃣ Why aggregate data daily instead of per request?
-
-What they’re testing:
-Performance awareness.
+### Q73 : Why aggregate data daily instead of per request?
 
 ✅ Answer:
 Aggregating per request would require expensive database scans, increasing latency and load. Pre‑aggregating daily data allows constant‑time reads and fast dashboard responses.
 
-4️⃣ What metrics were you aggregating?
-
-What they’re testing:
-Business understanding.
+### Q74 : What metrics were you aggregating?
 
 ✅ Answer:
 Total transaction volume, number of successful transactions, number of failed transactions, and total transaction count per day.
 
-5️⃣ How does this enable millisecond‑level queries?
-
-What they’re testing:
-Performance reasoning.
+### Q75 : How does this enable millisecond‑level queries?
 
 ✅ Answer:
 Dashboards query a small, pre‑computed summary table instead of large raw datasets, drastically reducing disk scans and computation time.
 
-6️⃣ Where does the input for aggregation come from?
-
-What they’re testing:
-Data flow understanding.
+### Q76 : Where does the input for aggregation come from?
 
 ✅ Answer:
 The input comes from transaction lifecycle events consumed asynchronously from RabbitMQ and persisted as raw immutable transaction facts.
 
-7️⃣ What happens if no aggregation pipeline exists?
-
-What they’re testing:
-Impact analysis.
+### Q77 : What happens if no aggregation pipeline exists?
 
 ✅ Answer:
 Dashboards would run slow queries directly on raw transaction data, leading to poor performance and potential impact on the analytics database.
 
-🟡 MEDIUM LEVEL (8–14)
-
-Design choices, correctness, and real‑world behavior
-
-8️⃣ How does incremental aggregation work at a high level?
-
-What they’re testing:
-System flow comprehension.
+### Q78 : How does incremental aggregation work at a high level?
 
 ✅ Answer:
 Each incoming transaction event updates the corresponding daily summary row by increasing counters and totals, ensuring aggregates stay current without full recomputation.
 
-9️⃣ How do you ensure aggregates stay correct with duplicate events?
-
-What they’re testing:
-Idempotency & correctness.
+### Q79 : How do you ensure aggregates stay correct with duplicate events?
 
 ✅ Answer:
 We enforce idempotency at the raw data layer using unique constraints. Aggregation is only performed after a successful raw insert, preventing double counting.
 
-🔟 Why not aggregate directly from raw data on a schedule?
-
-What they’re testing:
-Design trade‑offs.
+### Q80 Why not aggregate directly from raw data on a schedule?
 
 ✅ Answer:
 Scheduled aggregation introduces delays and heavy database scans. Incremental aggregation spreads computation over time and keeps summaries near real‑time.
 
-1️⃣1️⃣ How do you handle late‑arriving events?
-
-What they’re testing:
-Event‑time reasoning.
+### Q81 : How do you handle late‑arriving events?
 
 ✅ Answer:
 Late events are still processed based on their event date and update the appropriate daily summary, ensuring historical correctness.
 
-1️⃣2️⃣ What database operations are used during aggregation?
-
-What they’re testing:
-Practical implementation.
+### Q82 : What database operations are used during aggregation?
 
 ✅ Answer:
 We use atomic upserts (INSERT … ON CONFLICT DO UPDATE) to safely update daily summaries in a single transaction.
 
-1️⃣3️⃣ How do you prevent race conditions during aggregation updates?
-
-What they’re testing:
-Concurrency awareness.
+### Q83 : How do you prevent race conditions during aggregation updates?
 
 ✅ Answer:
 Database‑level atomic operations and row‑level locking ensure concurrent updates to the same daily summary are handled safely.
 
-1️⃣4️⃣ How does this design benefit dashboard teams?
-
-What they’re testing:
-Downstream consumer impact.
+### Q84 : How does this design benefit dashboard teams?
 
 ✅ Answer:
 It provides fast, predictable APIs that return results instantly, allowing dashboards to remain responsive even under heavy user load.
 
-🔴 ADVANCED LEVEL (15–20)
-
-Scalability, resilience, and architectural maturity
-
-1️⃣5️⃣ How does incremental aggregation scale with increasing traffic?
-
-What they’re testing:
-Scalability thinking.
+### Q85 : How does incremental aggregation scale with increasing traffic?
 
 ✅ Answer:
 Aggregation cost is distributed across individual events instead of centralized batch jobs, allowing horizontal scaling with increased event volume.
 
-1️⃣6️⃣ How does this design behave under traffic spikes?
-
-What they’re testing:
-Burst handling.
+### Q86 : How does this design behave under traffic spikes?
 
 ✅ Answer:
 RabbitMQ buffers incoming events, and consumers process them at a controlled rate. Aggregation keeps up without overwhelming the database.
 
-1️⃣7️⃣ What happens if aggregation logic has a bug?
-
-What they’re testing:
-Recovery strategy.
+### Q87 : What happens if aggregation logic has a bug?
 
 ✅ Answer:
 Since raw events are stored immutably, we can fix the logic and recompute aggregates by replaying historical data.
 
-1️⃣8️⃣ Why not use real‑time stream processing instead?
-
-What they’re testing:
-Tech comparison.
+### Q88 : Why not use real‑time stream processing instead?
 
 ✅ Answer:
 Stream processing adds complexity. Incremental DB‑based aggregation was sufficient for near real‑time needs with lower operational overhead.
 
-1️⃣9️⃣ How does this design support compliance and audits?
-
-What they’re testing:
-Fintech awareness.
+### Q89 : How does this design support compliance and audits?
 
 ✅ Answer:
 Aggregates are derived from immutable raw data, so auditors can always verify summary numbers by tracing back to original events.
 
-2️⃣0️⃣ What are the risks if aggregation logic is incorrect?
-
-What they’re testing:
-Risk management.
+### Q90 : What are the risks if aggregation logic is incorrect?
 
 ✅ Answer:
 Incorrect financial metrics could mislead business decisions or reports. That’s why immutability, replayability, and validation checks are critical safeguar
 
-What do you mean by “read‑only REST APIs”?
-
-What they’re testing:
-API responsibility clarity.
+### Q91 : What do you mean by “read‑only REST APIs”?
 
 ✅ Answer:
 Read‑only REST APIs only expose data retrieval endpoints like GET and do not allow data creation, updates, or deletion, ensuring analytics consumers cannot modify financial data.
 
-2️⃣ Why are analytics APIs exposed as read‑only?
-
-What they’re testing:
-Data safety awareness.
+### Q92 Why are analytics APIs exposed as read‑only?
 
 ✅ Answer:
 Analytics data represents derived financial insights and must remain protected from external modification to preserve correctness, auditability, and consistency.
 
-3️⃣ What does it mean for an API to be stateless?
-
-What they’re testing:
-Core REST principles.
+### Q93 : What does it mean for an API to be stateless?
 
 ✅ Answer:
 Stateless means each request contains all the information required to process it, and the server does not store any client session state between requests.
 
-4️⃣ Why is statelessness important for dashboards?
-
-What they’re testing:
-Scalability thinking.
+### Q94 : Why is statelessness important for dashboards?
 
 ✅ Answer:
 Stateless APIs can scale horizontally, allowing multiple instances behind a load balancer to serve high dashboard traffic without session affinity.
 
-5️⃣ What kind of clients consume these APIs?
-
-What they’re testing:
-Real‑world usage understanding.
+### Q95 : What kind of clients consume these APIs?
 
 ✅ Answer:
 Operational dashboards, business intelligence tools, finance teams, reporting services, and compliance systems consume these APIs.
 
-6️⃣ What is meant by “daily summaries”?
-
-What they’re testing:
-Domain understanding.
+### Q96 : What is meant by “daily summaries”?
 
 ✅ Answer:
 Daily summaries are aggregated metrics per day such as total transaction volume, transaction counts, and success/failure ratios.
 
-7️⃣ What are “merchant‑level insights”?
-
-What they’re testing:
-Business context.
+### Q97 : What are “merchant‑level insights”?
 
 ✅ Answer:
 Merchant‑level insights provide performance metrics per merchant, including transaction volume, success rate, regional distribution, and historical trends.
 
-🟡 MEDIUM LEVEL (8–14)
-
-Performance, design choices, and production behavior
-
-8️⃣ Why expose separate APIs for daily summaries and merchant insights?
-
-What they’re testing:
-API design reasoning.
+### Q98 : Why expose separate APIs for daily summaries and merchant insights?
 
 ✅ Answer:
 They serve different use cases—daily summaries power operational dashboards, while merchant insights support performance analysis and risk evaluations. Separation keeps APIs focused and efficient.
 
-9️⃣ How are these APIs optimized for high traffic?
-
-What they’re testing:
-Performance optimization.
+### Q99 : How are these APIs optimized for high traffic?
 
 ✅ Answer:
 They query pre‑aggregated tables, return compact responses, avoid joins on large datasets, and use indexed access paths for predictable low latency.
 
-🔟 How do you ensure consistent response times under load?
-
-What they’re testing:
-Operational stability.
+### Q100 How do you ensure consistent response times under load?
 
 ✅ Answer:
 By querying small summary tables, tuning database indexes, using connection pooling, and keeping APIs stateless for horizontal scaling.
 
-1️⃣1️⃣ Why not expose raw transaction data directly?
-
-What they’re testing:
-Data exposure and performance.
+### Q101 Why not expose raw transaction data directly?
 
 ✅ Answer:
 Raw data is large and sensitive. Exposing it would increase latency, load, and risk, while dashboards typically require aggregated insights, not granular records.
 
-1️⃣2️⃣ How do clients filter data in these APIs?
-
-What they’re testing:
-API usability.
+### Q102 How do clients filter data in these APIs?
 
 ✅ Answer:
 Filters are passed as query parameters like date ranges, merchant IDs, or regions, allowing flexible yet controlled data access.
 
-1️⃣3️⃣ How do you validate incoming API requests?
-
-What they’re testing:
-Robustness.
+### Q103 : How do you validate incoming API requests?
 
 ✅ Answer:
 We validate query parameters for format, range, and business rules, returning appropriate error responses for invalid inputs.
 
-1️⃣4️⃣ How do you version these APIs?
-
-What they’re testing:
-Change management.
+### Q104 : How do you version these APIs?
 
 ✅ Answer:
 We use URL‑based or header‑based versioning to introduce changes without breaking existing dashboard consumers.
 
-🔴 ADVANCED LEVEL (15–20)
-
-Scalability, security, and architectural maturity
-
-1️⃣5️⃣ How does stateless API design enable horizontal scaling?
-
-What they’re testing:
-Distributed systems understanding.
+### Q105 : How does stateless API design enable horizontal scaling?
 
 ✅ Answer:
 Because no session state is stored on the server, any request can be handled by any instance, making scaling out straightforward using load balancers.
 
-1️⃣6️⃣ How do you prevent APIs from becoming a bottleneck?
-
-What they’re testing:
-System resilience.
+### Q106 : How do you prevent APIs from becoming a bottleneck?
 
 ✅ Answer:
 By using pre‑aggregated data, caching frequently accessed responses, and scaling API instances independently from ingestion pipelines.
 
-1️⃣7️⃣ How do you secure read‑only analytics APIs?
-
-What they’re testing:
-Security awareness.
+### Q107 : How do you secure read‑only analytics APIs?
 
 ✅ Answer:
 We use authentication, role‑based authorization, and network‑level controls to restrict access while keeping APIs read‑only.
 
-1️⃣8️⃣ How do these APIs support real‑time dashboards?
-
-What they’re testing:
-Latency guarantees.
+### Q108 : How do these APIs support real‑time dashboards?
 
 ✅ Answer:
 Aggregates are updated incrementally during ingestion, so dashboards receive near‑real‑time data without heavy computation during reads.
 
-1️⃣9️⃣ What happens if dashboard traffic suddenly spikes?
+### Q109 : What happens if dashboard traffic suddenly spikes?
 
 What they’re testing:
 Burst handling.
@@ -683,147 +553,102 @@ Burst handling.
 ✅ Answer:
 Stateless APIs scale horizontally, and the database handles predictable loads through indexed queries, ensuring stable performance during spikes.
 
-2️⃣0️⃣ What issues would arise if APIs were stateful or write‑enabled?
-
-What they’re testing:
-Risk awareness.
+### Q110 : What issues would arise if APIs were stateful or write‑enabled?
 
 ✅ Answer:
 Statefulness would limit scalability, and write access could corrupt analytics data, break compliance guarantees, and introduce security risks.
 
-Q1 (Basic)
-
-Interviewer: What performance problem were you trying to solve here?
+### Q111 : What performance problem were you trying to solve here?
 
 ✅ Ideal Answer:
 The system needed to handle very high write volumes and still support fast read queries for analytics dashboards. Without optimization, inserts would be slow and analytical queries over large datasets would degrade significantly.
 
-Q2 (Basic)
-
-Interviewer: What do you mean by time‑based indexing?
+### Q112: What do you mean by time‑based indexing?
 
 ✅ Ideal Answer:
 Time‑based indexing means creating indexes on timestamp or date columns—like event_time—so that queries filtering by date range can quickly locate relevant rows without scanning the entire table.
 
-Q3 (Basic)
-
-Interviewer: Why is time‑based indexing especially important in analytics systems?
+### Q113 : Why is time‑based indexing especially important in analytics systems?
 
 ✅ Ideal Answer:
 Most analytics queries are time‑bounded, such as daily, weekly, or monthly reports. Indexing on time ensures these queries remain fast as historical data grows.
 
-Q4 (Basic)
-
-Interviewer: What is a merchant‑based index?
+### Q114 : What is a merchant‑based index?
 
 ✅ Ideal Answer:
 A merchant‑based index is an index on merchant_id, which allows fast retrieval of transactions related to a specific merchant—commonly required for merchant performance dashboards or risk analysis.
 
-Q5 (Basic)
-
-Interviewer: What do you mean by batch inserts?
+### Q115 : What do you mean by batch inserts?
 
 ✅ Ideal Answer:
 Batch inserts mean inserting multiple records in a single database operation instead of inserting one row at a time, significantly reducing network overhead and transaction costs.
 
-✅ MEDIUM LEVEL (Design Choices & Trade‑offs)
-
-Q6 (Medium)
-
-Interviewer: Why not rely on a single composite index instead of multiple indexes?
+### Q116 : Why not rely on a single composite index instead of multiple indexes?
 
 ✅ Ideal Answer:
 Different query patterns require different indexes. Time‑range queries, merchant‑specific queries, and status‑based queries benefit from separate or targeted composite indexes. A single index rarely serves all access patterns efficiently.
 
-Q7 (Medium)
-
-Interviewer: How did you decide which fields to index?
+### Q117 : How did you decide which fields to index?
 
 ✅ Ideal Answer:
 By analyzing query patterns—fields frequently used in WHERE clauses, GROUP BY clauses, and joins. Time, merchant, and status fields were consistently used in analytics queries, making them strong candidates.
 
-Q8 (Medium)
-
-Interviewer: What is the downside of adding too many indexes?
+### Q118 : What is the downside of adding too many indexes?
 
 ✅ Ideal Answer:
 Indexes increase write overhead because every insert or update must also update the index. They also consume storage, so we only added indexes that delivered clear query‑performance benefits.
 
-Q9 (Medium)
-
-Interviewer: How do batch inserts help under high throughput?
+### Q119 : How do batch inserts help under high throughput?
 
 ✅ Ideal Answer:
 They reduce the number of database round trips and transaction commits, allowing the system to process thousands of records efficiently while keeping latency low.
 
-Q10 (Medium)
-
-Interviewer: Did batch inserts affect idempotency or correctness?
+### Q120 : Did batch inserts affect idempotency or correctness?
 
 ✅ Ideal Answer:
 No, because idempotency was enforced at the database level using unique constraints. Even in batch inserts, duplicate rows would be rejected safely.
 
-✅ ADVANCED LEVEL (Production Depth & Scaling)
-
-Q11 (Advanced)
-
-Interviewer: How do indexes behave as the table grows to millions of records?
+### Q121 : How do indexes behave as the table grows to millions of records?
 
 ✅ Ideal Answer:
 Indexes grow in size, but proper indexing ensures logarithmic lookup time. Combined with partitioning and selective indexes, query performance remains stable even with large datasets.
 
-Q12 (Advanced)
-
-Interviewer: Why not use real‑time aggregation instead of optimizing raw tables?
+### Q122 : Why not use real‑time aggregation instead of optimizing raw tables?
 
 ✅ Ideal Answer:
 Even with aggregates, raw transaction data must be stored efficiently for audit, replay, and recomputation. Optimizing raw tables ensures both rebuildability and sustained write performance.
 
-Q13 (Advanced)
-
-Interviewer: How does batch insert size affect system performance?
+### Q123 : How does batch insert size affect system performance?
 
 ✅ Ideal Answer:
 Very small batches don’t reduce overhead significantly, while extremely large batches increase memory usage and transaction duration. We tune batch size to balance throughput and system stability.
 
-Q14 (Advanced)
-
-Interviewer: What happens if batch inserts fail midway?
+### Q124 : What happens if batch inserts fail midway?
 
 ✅ Ideal Answer:
 Batch inserts are typically wrapped in transactions. If a failure occurs, the transaction is rolled back, ensuring partial inserts don’t corrupt the database.
 
-Q15 (Advanced)
-
-Interviewer: How does indexing affect write‑heavy systems like this?
+### Q125 : How does indexing affect write‑heavy systems like this?
 
 ✅ Ideal Answer:
 Indexes slightly slow down writes due to maintenance overhead, but carefully chosen indexes provide a net performance gain because read efficiency is critical for analytics workloads.
 
-Q16 (Advanced)
-
-Interviewer: Would you ever drop indexes temporarily?
+### Q126 : Would you ever drop indexes temporarily?
 
 ✅ Ideal Answer:
 Yes, during large backfills or replays, indexes can be dropped and recreated afterward to significantly speed up bulk loading.
 
-Q17 (Advanced)
-
-Interviewer: How does partitioning complement time‑based indexing?
+### Q127 : How does partitioning complement time‑based indexing?
 
 ✅ Ideal Answer:
 Partitioning physically separates data—such as monthly partitions—so queries automatically scan only relevant partitions, further reducing I/O and improving performance beyond what indexes alone provide.
 
-Q18 (Advanced)
-
-Interviewer: How do these optimizations help during peak traffic?
+### Q128 : How do these optimizations help during peak traffic?
 
 ✅ Ideal Answer:
 Batch inserts absorb high write bursts efficiently, while indexes keep read queries predictable and fast, preventing dashboards and reports from slowing down during peak transaction hours.
 
-Q19 (Advanced)
-
-Interviewer: What metrics would you monitor to ensure database performance stays healthy?
+### Q129 : What metrics would you monitor to ensure database performance stays healthy?
 
 ✅ Ideal Answer:
 Query latency, index hit ratio, write throughput, lock contention, slow query logs, and table growth trends.
