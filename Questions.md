@@ -5,358 +5,352 @@
 ✅ Ideal Answer:
 By read‑only, I mean the service does not modify or influence transaction data or money movement. It only consumes transaction events, stores immutable records for analytics, and exposes REST APIs to read aggregated insights for dashboards, reporting, and compliance. This ensures analytics logic never interferes with critical transaction processing.
 
-Q2 : What problem was this service solving?
+### Q2 : What problem was this service solving?
 
 ✅ Ideal Answer:
 The problem was to provide near‑real‑time financial insights—such as transaction volumes, success/failure rates, and merchant performance—without impacting core payment systems. Business, operations, and compliance teams needed fast and reliable analytics, and this service enabled that through an event‑driven, decoupled design.
 
-Q3 : What do you mean by event‑driven here?
+### Q3 : What do you mean by event‑driven here?
 
 ✅ Ideal Answer:
 Event‑driven means the service reacts to transaction lifecycle events asynchronously instead of making synchronous calls. Core systems emit events like transaction initiated or completed, and this service consumes those events via a message queue to process analytics independently.
 
-Q4 : Why did you choose an asynchronous event‑driven approach instead of API calls?
+### Q4 : Why did you choose an asynchronous event‑driven approach instead of API calls?
 
 ✅ Ideal Answer:
 Using async events avoids tight coupling with transaction systems and ensures analytics processing never adds latency to payments. It also improves scalability, fault isolation, and reliability, since failures in analytics don’t affect transaction execution.
 
 
-Q5 : How did you ensure the metrics were near‑real‑time?
+### Q5 : How did you ensure the metrics were near‑real‑time?
 
 ✅ Ideal Answer:
 Events were consumed as soon as they were published, and metrics were incrementally aggregated during ingestion rather than computed on demand. This allowed dashboards to reflect updates within seconds of a transaction completing, while still remaining eventually consistent.
 
-Q6 : What kind of data did this microservice ingest and store?
+### Q6 : What kind of data did this microservice ingest and store?
 
 ✅ Ideal Answer:
 It ingested transaction lifecycle events containing transaction ID, amount, currency, status, merchant ID, region, and timestamp. The service stored immutable transaction facts in a raw metrics table and maintained pre‑aggregated summaries for faster reads.
 
 
-Q7 : How do you prevent duplicate events from corrupting analytics metrics?
+### Q7 : How do you prevent duplicate events from corrupting analytics metrics?
 
 ✅ Ideal Answer:
 We implemented idempotency at the consumer level using a unique constraint on transaction ID and event type. If the same event is received more than once, the duplicate insert fails gracefully, ensuring aggregates are not double‑counted.
 
-Q8 : Why not calculate analytics directly from the raw transactions table at query time?
+### Q8 : Why not calculate analytics directly from the raw transactions table at query time?
 
 ✅ Ideal Answer:
 Query‑time aggregation would require frequent full‑table scans or large joins, which doesn’t scale under high transaction volumes. Pre‑aggregating metrics during ingestion allows O(1) reads for dashboards and keeps database load predictable and low.
 
-Q9 : How does this design support compliance and auditing needs?
+### Q9 : How does this design support compliance and auditing needs?
 
 ✅ Ideal Answer:
 By storing immutable, append‑only transaction facts, the system maintains a complete historical record that can be audited or replayed. Aggregates can always be regenerated from raw data, ensuring traceability and data consistency for compliance reporting.
 
-Q10 : What happens if this analytics service goes down during peak transaction hours?
+### Q10 : What happens if this analytics service goes down during peak transaction hours?
 
 ✅ Ideal Answer:
 Nothing impacts transactions. Core systems continue processing payments normally. Events remain queued in the message broker and are processed once the analytics service recovers. This failure isolation is a key benefit of the event‑driven design.
 
-Q11. What do you mean by asynchronous ingestion?
+### Q11. What do you mean by asynchronous ingestion?
 
 ✅ Answer:
 Asynchronous ingestion means the analytics service consumes transaction events independently without blocking or waiting for the core transaction flow. Events are published to RabbitMQ, and the analytics service processes them later at its own pace, ensuring no impact on transaction latency.
 
-Q12. Why did you use events instead of direct API calls?
+### Q12. Why did you use events instead of direct API calls?
 
 ✅ Answer:
 Direct API calls would tightly couple analytics to transaction systems, introducing latency and failure dependency. Events allow loose coupling, fault isolation, and scalability—analytics failures don’t affect transaction execution.
 
-Q13. What are transaction lifecycle events?
+### Q13. What are transaction lifecycle events?
 
 ✅ Answer:
 They represent different states of a transaction, such as TransactionInitiated, TransactionCompleted, and TransactionFailed, allowing downstream systems like analytics to understand how a transaction progressed without querying core systems.
 
-Q14. Why were only initiated, completed, and failed events used?
+### Q14. Why were only initiated, completed, and failed events used?
 
 ✅ Answer:
 These events capture the essential business lifecycle: when a transaction starts, when it succeeds, and when it fails. They are sufficient to derive volume, success rates, failure analysis, and financial summaries without overloading the system.
 
-Q15. Why RabbitMQ specifically?
+### Q15. Why RabbitMQ specifically?
 
 ✅ Answer:
 RabbitMQ is well‑suited for reliable event delivery, flexible routing, and moderate‑to‑high throughput use cases. It integrates easily with Spring, supports acknowledgments and retries, and fits analytics ingestion patterns well.
 
-Q16. How does this design protect core transaction systems?
+### Q16. How does this design protect core transaction systems?
 
 ✅ Answer:
 The transaction system only publishes an event and moves on. Even if analytics is slow or down, RabbitMQ buffers messages and retries delivery later, ensuring transaction processing remains unaffected.
 
-Q17. What happens if analytics service goes down?
+### Q17. What happens if analytics service goes down?
 
 ✅ Answer:
 Transactions continue normally. Events stay in RabbitMQ and are processed once the service recovers. No transaction data is lost, and no upstream systems are blocked.
 
-Q18. How does RabbitMQ fit into the decoupling?
+### Q18. How does RabbitMQ fit into the decoupling?
 
 ✅ Answer:
 RabbitMQ acts as an intermediary. Producers don’t know who consumes the events, and consumers don’t know who produced them. This removes direct dependencies and allows independent scaling and deployment.
 
-Q19. How do you ensure messages are not lost?
+### Q19. How do you ensure messages are not lost?
 
 ✅ Answer:
 We use durable exchanges and queues, persistent messages, and manual acknowledgments. Messages are acknowledged only after successful database persistence.
 
-Q20. How do you handle duplicate events?
+### Q20. How do you handle duplicate events?
 
 ✅ Answer:
 We enforce idempotency at the database level using a unique constraint on transaction_id and event_type. Duplicate messages are safely ignored without affecting aggregates.
 
-Q21. How do you handle message failures?
+### Q21. How do you handle message failures?
 
 ✅ Answer:
 On processing failures, the message is retried. After repeated failures, it’s routed to a Dead Letter Queue (DLQ) for inspection and correction without blocking the pipeline.
 
-Q22. How do events flow from core systems to analytics?
+### Q22. How do events flow from core systems to analytics?
 
 ✅ Answer:
 Core systems publish events to a RabbitMQ exchange, which routes them to analytics queues based on routing keys. The analytics consumer processes and persists them asynchronously.
 
-Q23. Why not expose analytics directly from transaction DBs?
+### Q23. Why not expose analytics directly from transaction DBs?
 
 ✅ Answer:
 Querying transactional databases for analytics would introduce load, slow down transactions, and risk data contention. Dedicated analytics storage keeps operational systems fast and stable.
 
-Q24. How does eventual consistency apply here?
+### Q24. How does eventual consistency apply here?
 
 ✅ Answer:
 Analytics data may lag slightly behind real‑time transactions, but it eventually reflects the correct state once all events are processed. This trade‑off enables scalability and safety.
 
-Q25. How do you scale this ingestion pipeline?
+### Q25. How do you scale this ingestion pipeline?
 
 ✅ Answer:
 The analytics service is stateless, so we scale horizontally by adding more consumers. RabbitMQ distributes messages across consumers, allowing parallel processing during peak traffic.
 
-Q26. How do you maintain ordering guarantees?
+### Q26. How do you maintain ordering guarantees?
 
 ✅ Answer:
 Ordering is not strictly required globally, but per‑transaction consistency is maintained using transaction IDs. The final state is derived correctly even if events arrive slightly out of order.
 
-Q27. Why not Kafka instead of RabbitMQ?
+### Q27. Why not Kafka instead of RabbitMQ?
 
 ✅ Answer:
 RabbitMQ suits moderate throughput and routing‑based patterns with simpler operational overhead. Kafka would be preferred for very high throughput, long‑term retention, or stream processing needs.
 
-Q28. How do you rebuild analytics data if logic changes?
+### Q28. How do you rebuild analytics data if logic changes?
 
 ✅ Answer:
 Because raw events are stored as immutable facts, we can replay them through the consumer to recompute aggregates without touching transaction systems.
 
-Q29. How do you ensure analytics never slows down payments?
+### Q29. How do you ensure analytics never slows down payments?
 
 ✅ Answer:
 There is no synchronous dependency. The transaction flow ends once an event is published. Analytics processing happens independently and cannot impact transaction latency or success.
 
-Q30. What would break if this decoupling didn’t exist?
+### Q30. What would break if this decoupling didn’t exist?
 
 ✅ Answer:
 Failures or slowness in analytics could block transactions, cause cascading outages, increase latency, and violate financial SLAs—making the system unsafe for fintech workloads.
 
 
-Q31 : What do you mean by an idempotent consumer?
+### Q31 : What do you mean by an idempotent consumer?
 
 ✅ Ideal Answer:
 An idempotent consumer ensures that processing the same event multiple times produces the same outcome as processing it once. Even if duplicate messages are delivered, the system state remains correct and consistent.
 
-Q32 : Why do you need idempotency in message‑driven systems?
+### Q32 : Why do you need idempotency in message‑driven systems?
 
 ✅ Ideal Answer:
 Because message brokers can deliver duplicate events due to retries, network failures, or consumer crashes. Without idempotency, duplicates can corrupt data, especially in financial systems.
 
-Q33 : What is meant by duplicate‑event handling?
+### Q33 : What is meant by duplicate‑event handling?
 
 ✅ Ideal Answer:
 Duplicate‑event handling refers to detecting and safely ignoring already processed events, ensuring they don’t cause double inserts or double aggregation in downstream systems.
 
-Q34 : What kind of problems can duplicates cause in analytics systems?
+### Q34 : What kind of problems can duplicates cause in analytics systems?
 
 ✅ Ideal Answer:
 Duplicates can inflate transaction counts, overstate financial volume, skew success/failure ratios, and cause incorrect business or compliance reports.
 
-Q35 : What does schema validation mean here?
+### Q35 : What does schema validation mean here?
 
 ✅ Ideal Answer:
 Schema validation ensures incoming events adhere to a predefined structure and data contract, such as expected fields, data types, and allowed values, before processing them.
 
 
-Q36 : How did you implement idempotency in your consumer?
+### Q36 : How did you implement idempotency in your consumer?
 
 ✅ Ideal Answer:
 Using a unique business key—typically a combination of transaction ID and event type—enforced through a database unique constraint. If a duplicate event is processed, the insert fails gracefully and the event is ignored.
 
-Q37 : Why is database‑level idempotency preferred over in‑memory checks?
+### Q37 : Why is database‑level idempotency preferred over in‑memory checks?
 
 ✅ Ideal Answer:
 Database‑level idempotency is durable and works across restarts and multiple consumer instances. In‑memory checks fail in distributed systems or when consumers restart.
 
-Q38 : What schema validation strategies did you use?
+### Q38 : What schema validation strategies did you use?
 
 ✅ Ideal Answer:
 We validated required fields, data types, and enum values at the consumer boundary—often using JSON schema or DTO validation—before business processing or database writes.
 
-Q39 : What happens if an event fails schema validation?
+### Q39 : What happens if an event fails schema validation?
 
 ✅ Ideal Answer:
 Invalid events are rejected and sent to a Dead Letter Queue for inspection, preventing corrupt or malformed data from entering the analytics pipeline.
 
-Q40 : How do retries interact with idempotency?
+### Q40 : How do retries interact with idempotency?
 
 ✅ Ideal Answer:
 Retries may resend the same event multiple times, but because the consumer is idempotent, retries do not cause duplicate state changes, making retries safe.
 
 
-Q41 : You mentioned exactly‑once processing semantics. How did you achieve that?
+### Q41 : You mentioned exactly‑once processing semantics. How did you achieve that?
 
 ✅ Ideal Answer:
 True exactly‑once isn’t guaranteed by most brokers, so we achieved effectively‑once semantics by combining at‑least‑once delivery with idempotent consumers and transactional database writes.
 
-Q42 : Why is exactly‑once hard to achieve in distributed systems?
+### Q42 : Why is exactly‑once hard to achieve in distributed systems?
 
 ✅ Ideal Answer:
 Because partial failures, network partitions, and crashes can occur after message delivery but before acknowledgment. Coordinating state changes across distributed components without duplication is inherently complex.
 
-Q43 : How does your design support safe event replays?
+### Q43 : How does your design support safe event replays?
 
 ✅ Ideal Answer:
 Since consumers are idempotent and raw data is append‑only, events can be replayed from the broker or event store without risking double counting or data corruption.
 
-Q44 : What changes, if any, are required before replaying events?
+### Q44 : What changes, if any, are required before replaying events?
 
 ✅ Ideal Answer:
 Typically, aggregated tables may be truncated or recomputed, but raw transaction tables remain unchanged, ensuring deterministic rebuilds.
 
-Q45 : How do you handle high throughput while maintaining idempotency?
+### Q45 : How do you handle high throughput while maintaining idempotency?
 
 ✅ Ideal Answer:
 By using efficient database constraints, indexed unique keys, batch processing, and tuned consumer concurrency so idempotency checks remain O(1) and don’t become a bottleneck.
 
-Q46 : Can idempotency alone guarantee data correctness?
+### Q46 : Can idempotency alone guarantee data correctness?
 
 ✅ Ideal Answer:
 No. Idempotency prevents duplicates, but correctness also depends on schema validation, correct event ordering assumptions, and consistent aggregation logic.
 
-Q47 : How do you deal with out‑of‑order events?
+### Q47 : How do you deal with out‑of‑order events?
 
 ✅ Ideal Answer:
 Analytics systems are designed to be eventually consistent. Aggregations rely on event timestamps, and since multiple lifecycle events are allowed per transaction, ordering isn’t strictly enforced at ingestion time.
 
-Q48 : What are the risks if idempotency is implemented incorrectly?
+### Q48 : What are the risks if idempotency is implemented incorrectly?
 
 ✅ Ideal Answer:
 Incorrect idempotency can silently corrupt metrics, cause financial misreporting, and break compliance requirements—often without immediate visibility.
 
-Q49 : Why is this design especially important in fintech systems?
+### Q49 : Why is this design especially important in fintech systems?
 
 ✅ Ideal Answer:
 Fintech systems require high data accuracy, auditability, and fault tolerance. Duplicate or inconsistent analytics can lead to wrong financial decisions or regulatory violations.
 
-Q50 : How would this design differ if this were a transaction‑processing service instead of analytics?
+### Q50 : How would this design differ if this were a transaction‑processing service instead of analytics?
 
 ✅ Ideal Answer:
 For transaction processing, stricter guarantees, distributed transactions, and stronger consistency controls would be required. For analytics, idempotent event consumption with eventual consistency is the safer and more scalable choice.
 
-Q51 : What do you mean by “immutable transaction facts”?
+### Q51 : What do you mean by “immutable transaction facts”?
 
 ✅ Answer:
 Immutable transaction facts are records that, once written, are never updated or deleted. Each record represents a factual event that occurred at a specific time, ensuring the data always reflects what actually happened.
 
-Q52 : Why is immutability important for transaction data?
+### Q52 : Why is immutability important for transaction data?
 
 ✅ Answer:
 Immutability ensures data integrity, auditability, and trust. In financial systems, historical transaction data must not change, as it may be used for audits, dispute resolution, and compliance checks.
 
-Q53 : What does “append‑only” mean in database terms?
+### Q53 : What does “append‑only” mean in database terms?
 
 ✅ Answer:
 Append‑only means that data is only inserted into the table. Existing rows are never updated or deleted, making write operations predictable and avoiding accidental data loss or corruption.
 
-Q54: Why did you choose PostgreSQL for this storage?
+### Q54: Why did you choose PostgreSQL for this storage?
 
 ✅ Answer:
 PostgreSQL provides strong ACID guarantees, excellent indexing support, mature tooling, and reliability, making it well‑suited for storing critical financial data with consistency and durability.
 
-Q55 : What kind of data is stored in this raw metrics table?
-
-What they’re testing:
-Understanding of domain data.
+### Q55 : What kind of data is stored in this raw metrics table?
 
 ✅ Answer:
 It stores transaction identifiers, amounts, currencies, statuses, merchant information, region, and event timestamps—essentially the core transactional facts required for analytics and reporting.
 
-Q56. Why not update the record when transaction status changes?
+### Q56. Why not update the record when transaction status changes?
 
 ✅ Answer:
 Updating records would overwrite historical states. By storing each lifecycle event as a separate immutable record, we preserve the full transaction history and make downstream analytics more reliable.
 
-Q57. How does this help historical analysis?
+### Q57. How does this help historical analysis?
 
 ✅ Answer:
 Because all events are retained permanently, we can analyze trends over time, recompute metrics for past periods, and answer questions that weren’t originally anticipated when the data was stored.
 
-Q58 : How does this design support auditability?
+### Q58 : How does this design support auditability?
 
 ✅ Answer:
 Auditors can trace every transaction’s full lifecycle by reviewing immutable records. Since data isn’t modified, audits can trust the accuracy and completeness of historical records.
 
-Q59 : How do you prevent duplicate transaction records?
+### Q59 : How do you prevent duplicate transaction records?
 
 ✅ Answer:
 We use a unique constraint on key fields like transaction_id and event_type. If a duplicate event arrives, the insert fails safely without impacting the dataset.
 
-Q60 : How does this design enable replayability?
+### Q60 : How does this design enable replayability?
 
 ✅ Answer:
 Since raw transaction events are stored permanently, we can reprocess them to recompute aggregates if business logic changes or analytics tables need rebuilding.
 
-Q61 : What performance benefits does append‑only storage provide?
+### Q61 : What performance benefits does append‑only storage provide?
 
 ✅ Answer:
 Append‑only writes are fast because they avoid row locking and in‑place updates. This makes the system efficient under high write throughput.
 
-Q62 :  How do you query large append‑only tables efficiently?
+### Q62 :  How do you query large append‑only tables efficiently?
 
 ✅ Answer:
 We use time‑based indexes and merchant‑based indexes, allowing efficient filtering by date ranges and identifiers without scanning the entire table.
 
-Q63 : Why not store only aggregated data instead of raw facts?
+### Q63 : Why not store only aggregated data instead of raw facts?
 
 ✅ Answer:
 Aggregates alone lose detail. Raw facts allow rebuilding aggregates, validating metrics, and answering new analytical questions without data loss.
 
-Q64 : How do you handle schema evolution over time?
+### Q64 : How do you handle schema evolution over time?
 
 ✅ Answer:
 We version events and make schema changes backward‑compatible by adding nullable fields or new tables, ensuring old data remains valid and usable.
 
-Q65 : How does immutability simplify system design?
-
-What they’re testing:
-Architectural clarity.
+### Q65 : How does immutability simplify system design?
 
 ✅ Answer:
 Immutability reduces complexity by eliminating update conflicts, rollback scenarios, and race conditions. Systems become easier to reason about and debug.
 
-Q66 : How does this design behave under very high transaction volume?
+### Q66 : How does this design behave under very high transaction volume?
 
 ✅ Answer:
 Append‑only inserts scale well under load. Combined with partitioning and indexing, PostgreSQL can efficiently handle large write volumes without degrading performance.
 
-Q67 : Why not use NoSQL or event stores instead?
+### Q67 : Why not use NoSQL or event stores instead?
 
 ✅ Answer:
 PostgreSQL provides strong consistency, relational querying, and mature tooling. Given the need for structured queries and reporting, it was a practical and reliable choice.
 
-Q68 : How do you manage storage growth for immutable data?
+### Q68 : How do you manage storage growth for immutable data?
 
 ✅ Answer:
 We use table partitioning by date and retention policies. Older partitions can be archived, compressed, or moved to cold storage without impacting recent queries.
 
-Q69 : How does this enable compliance and legal investigations?
+### Q69 : How does this enable compliance and legal investigations?
 
 ✅ Answer:
 Because every transaction event is preserved, investigators can reconstruct exact transaction timelines, verify outcomes, and prove data integrity during disputes or audits.
 
-Q70 : What problems would arise if the data were mutable instead?
+### Q70 : What problems would arise if the data were mutable instead?
 
 ✅ Answer:
 Mutable data could hide historical states, introduce inconsistencies, complicate audits, and make it impossible to confidently replay or verify past transaction behavior.
