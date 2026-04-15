@@ -1,0 +1,32 @@
+Designed and implemented an event-driven microservices architecture using Spring Boot and RabbitMQ to process high-volume transaction lifecycle events for real-time analytics and compliance systems.
+Built scalable data processing pipelines with asynchronous messaging, enabling reliable ingestion and transformation of financial events under production workloads.
+Engineered idempotent consumers and fault-tolerant processing mechanisms, ensuring data consistency and resilience in distributed systems.
+Developed incremental aggregation logic to generate pre-computed financial metrics, significantly improving dashboard response times.
+Optimized PostgreSQL query performance using advanced indexing and query tuning, reducing critical query latency by 35%+.
+Achieved 90%+ test coverage by implementing comprehensive unit and integration tests using JUnit, Mockito, and WireMock.
+Automated CI/CD pipelines using GitHub Actions, reducing manual deployment effort by 70% and improving release stability.
+Deployed and monitored backend services on AWS EC2, maintaining 99%+ uptime in production environments.
+Built and integrated LLM-based, RAG-powered conversational systems, enabling accurate natural language query handling across business workflows.
+
+Backend Engineer with 1+ year of experience building scalable, event-driven microservices using Java, Spring Boot, and RabbitMQ. Specialized in designing high-throughput data processing systems, optimizing database performance, and developing real-time analytics platforms. Experience with distributed systems, caching, and GenAI-powered applications.
+
+Designed and implemented an event-driven financial analytics platform using Spring Boot and RabbitMQ, processing high-volume transaction lifecycle events to generate real-time insights for dashboards and compliance systems.
+
+Engineered idempotent event consumers with incremental aggregation pipelines, ensuring fault tolerance and accurate financial computations at scale.
+
+Optimized PostgreSQL queries with advanced indexing strategies, reducing query latency by 35%+ under production load.
+
+Backend: Java, Spring Boot, Microservices, REST APIs
+Distributed Systems: Event-Driven Architecture, RabbitMQ, Kafka
+Databases: PostgreSQL, MySQL, MongoDB
+Caching: Redis
+Cloud & DevOps: AWS EC2, Docker, CI/CD (GitHub Actions)
+GenAI: RAG, LLMs, LangChain, Vector Databases
+
+
+Backend: Java, Spring Boot, Microservices, REST APIs  
+Distributed Systems: Event-Driven Architecture, RabbitMQ, Kafka  
+Databases: PostgreSQL, MySQL, MongoDB  
+Caching: Redis  
+Cloud & DevOps: AWS EC2, Docker, CI/CD (GitHub Actions)  
+GenAI: RAG, LLMs, LangChain, Vector Databases
